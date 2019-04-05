@@ -1,4 +1,3 @@
 fn main() {
-    println!("リモート実行テスト");
-
+    println!("リモート実行テスト in linux");
 }
