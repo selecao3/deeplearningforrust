@@ -14,6 +14,8 @@ fn preprocess(text: String) {
             id_to_word.insert(new_id, word);
         }
     }
+    println!("{:?}", word_to_id);
+    println!("{:?}", id_to_word);
 }
 
 fn main() {
