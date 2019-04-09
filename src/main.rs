@@ -2,7 +2,7 @@ extern crate ndarray;
 extern crate ndarray_linalg;
 use ndarray::Array;
 use ndarray::Array2;
-use ndarray_linalg::norm::Norm;
+use ndarray_linalg::*;
 use std::collections::HashMap;
 
 fn preprocess(
@@ -62,32 +62,39 @@ fn create_co_matrix(
     co_matrix
 }
 
+// 引数（usize）=> mapvでf32にキャスト=>norm_l1()
 fn cos_similarity(
     x: Array<usize, ndarray::Dim<[usize; 1]>>,
     y: Array<usize, ndarray::Dim<[usize; 1]>>,
 ) -> () {
-    println!("cos_similarity start");
-    let nx = x.clone();
-    println!("{:?}", nx);
-    let hoge = x.mapv(|tmp: usize| tmp * tmp).norm_f1();
+    let eps = 0.00000001;
+    let float_x = x.mapv(|tmp: usize| tmp as f32);
+    let float_y = y.mapv(|tmp: usize| tmp as f32);
+    //let nx = float_x.clone() / float_x.mapv(|tmp: f32| tmp * tmp + eps).norm_l2();
+    let nx = float_x.clone() / float_x.mapv(|tmp: f32| tmp + eps).norm_l2();
+    //let ny = float_y.clone() / float_y.mapv(|tmp: f32| tmp * tmp + eps).norm_l2();
+    let ny = float_y.clone() / float_y.mapv(|tmp: f32| tmp + eps).norm_l2();
+    let hoge = ny.dot(&nx);
     println!("{:?}", hoge);
-
-    let ny = y.clone() / y.mapv(|tmp: usize| tmp * tmp);
-    nx.dot(&ny);
 }
 
 fn main() {
     let vocab_size: usize;
-    let text = "I'm kazuha Ishida.";
+    let text = "You say goodbye and I say hello.";
     let (corpus, word_to_id, id_to_word) = preprocess(text);
     vocab_size = word_to_id.len();
+    println!("{:?}", word_to_id);
+    println!("{:?}", id_to_word);
+
     let C = create_co_matrix(corpus, vocab_size);
     let mut c0 = Array::default(1);
     let mut c1 = Array::default(1);
-    if let Some(target_word) = word_to_id.get("kazuha") {
+    if let Some(target_word) = word_to_id.get("you") {
         c0 = C.row(target_word.clone()).to_owned();
+        println!("c0");
+        println!("{:?}", c0);
     }
-    if let Some(target_word) = word_to_id.get("ishida") {
+    if let Some(target_word) = word_to_id.get("goodbye") {
         c1 = C.row(target_word.clone()).to_owned();
     }
     cos_similarity(c0, c1);

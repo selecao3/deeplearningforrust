@@ -9,6 +9,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "blas-src"
 version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
+dependencies = [
+ "openblas-src 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
+]
 
 [[package]]
 name = "cblas-sys"
@@ -126,6 +129,11 @@ version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 
 [[package]]
+name = "openblas-src"
+version = "0.6.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+
+[[package]]
 name = "proc-macro2"
 version = "0.4.27"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -209,8 +217,10 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 name = "win_target_sample"
 version = "0.1.0"
 dependencies = [
+ "blas-src 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ndarray 0.12.1 (registry+https://github.com/rust-lang/crates.io-index)",
  "ndarray-linalg 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)",
+ "openblas-src 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)",
 ]
 
 [[package]]
@@ -249,6 +259,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 "checksum ndarray-linalg 0.10.0 (registry+https://github.com/rust-lang/crates.io-index)" = "336822db7fd4082f5af50735adab350be21eb55ccd759dc8b642c4702aa58ab8"
 "checksum num-complex 0.2.1 (registry+https://github.com/rust-lang/crates.io-index)" = "107b9be86cd2481930688277b675b0114578227f034674726605b8a482d8baf8"
 "checksum num-traits 0.2.6 (registry+https://github.com/rust-lang/crates.io-index)" = "0b3a5d7cc97d6d30d8b9bc8fa19bf45349ffe46241e8816f50f62f6d6aaabee1"
+"checksum openblas-src 0.6.1 (registry+https://github.com/rust-lang/crates.io-index)" = "af5265a3d795f0624d3e3756cb484da70f8bfbf409ce23d9035ffc8574297aad"
 "checksum proc-macro2 0.4.27 (registry+https://github.com/rust-lang/crates.io-index)" = "4d317f9caece796be1980837fd5cb3dfec5613ebdb04ad0956deea83ce168915"
 "checksum procedurals 0.3.1 (registry+https://github.com/rust-lang/crates.io-index)" = "0d3e66fa24d01fa50ee8f7931b73d1c18b17d00bf9dc64190f1b592abd0a4323"
 "checksum quote 0.6.11 (registry+https://github.com/rust-lang/crates.io-index)" = "cdd8e04bd9c52e0342b406469d494fcb033be4bdbe5c606016defbb1681411e1"
