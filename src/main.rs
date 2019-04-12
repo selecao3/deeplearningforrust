@@ -1,4 +1,6 @@
+use std::collections::BTreeMap;
 use std::collections::HashMap;
+use std::iter::FromIterator;
 
 fn preprocess(text: &str) -> (Vec<usize>, HashMap<String, usize>, HashMap<usize, String>) {
     let mut new_id: usize;
@@ -50,7 +52,7 @@ fn create_co_matrix(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
 }
 
 // 引数（usize）=> mapvでf32にキャスト=>norm_l1()
-fn cos_similarity(x: Vec<usize>, y: Vec<usize>) -> () {
+fn cos_similarity(x: Vec<usize>, y: Vec<usize>) -> f32 {
     let eps = 0.00000001;
     let float_x: Vec<f32> = x.iter().map(|&tmp| tmp as f32).collect();
     let float_y: Vec<f32> = y.iter().map(|&tmp| tmp as f32).collect();
@@ -71,10 +73,47 @@ fn cos_similarity(x: Vec<usize>, y: Vec<usize>) -> () {
         .iter()
         .map(|y| y / (norm(float_y.clone()) + eps))
         .collect();
-    //let ny = float_y.clone() / float_y.mapv(|tmp: f32| tmp * tmp + eps).norm_l2();
-    //let ny = float_y.clone() / float_y.mapv(|tmp: f32| tmp + eps).norm_l2();
-    let hoge: f32 = ny.iter().zip(nx.iter()).map(|(x, y)| x * y).sum();
-    println!("{:?}", hoge);
+    let ret_v: f32 = ny.iter().zip(nx.iter()).map(|(x, y)| x * y).sum();
+    ret_v
+}
+
+fn most_similar(
+    query: String,
+    word_to_id: HashMap<String, usize>,
+    id_to_word: HashMap<usize, String>,
+    word_matrix: Vec<Vec<usize>>,
+    top: usize,
+) -> () {
+    if word_to_id.keys().find(|&x| x == &query).is_none() {
+        println!("{:?} is not found", query);
+    }
+    println!("[query] {:?}", query);
+    let query_id = word_to_id[&query];
+    let query_vec = word_matrix[query_id].clone();
+
+    let vocab_size = id_to_word.keys().len();
+    let mut similarity: BTreeMap<usize, f32> = BTreeMap::new();
+    for i in 0..vocab_size {
+        similarity.insert(
+            i,
+            cos_similarity(word_matrix[i].to_owned(), query_vec.clone()),
+        );
+    }
+    let mut count = 0;
+    let mut v = Vec::from_iter(similarity);
+    v.sort_by(|&(_, a), &(_, b)| b.partial_cmp(&a).unwrap());
+    //上記の書き方でBtreeMapのkeyでsortができる
+    for i in v.iter() {
+        let (inx, sim) = i;
+        if id_to_word[inx] == query {
+            continue;
+        }
+        println!("{:?}: {:?}", id_to_word[inx], sim);
+        count += 1;
+        if count >= top {
+            return;
+        }
+    }
 }
 
 fn main() {
@@ -82,9 +121,6 @@ fn main() {
     let text = "You say goodbye and I say hello.";
     let (corpus, word_to_id, id_to_word) = preprocess(text);
     vocab_size = word_to_id.len();
-    println!("{:?}", word_to_id);
-    println!("{:?}", id_to_word);
-    println!("{:?}", corpus);
 
     let C = create_co_matrix(corpus, vocab_size);
     let mut c0 = vec![0; vocab_size];
@@ -92,11 +128,10 @@ fn main() {
     if let Some(target_word) = word_to_id.get("you") {
         let target_word = target_word.clone();
         c0 = C[target_word].to_owned();
-        println!("c0");
-        println!("{:?}", c0);
     }
     if let Some(target_word) = word_to_id.get("goodbye") {
         c1 = C[target_word.clone()].to_owned();
     }
     cos_similarity(c0, c1);
+    most_similar("you".to_string(), word_to_id, id_to_word, C, 5)
 }
