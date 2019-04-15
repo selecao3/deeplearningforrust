@@ -2,6 +2,7 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 
+//学習データを返却する関数
 fn preprocess(text: &str) -> (Vec<usize>, HashMap<String, usize>, HashMap<usize, String>) {
     let mut new_id: usize;
     let mut corpus: Vec<usize> = Vec::new();
@@ -47,7 +48,6 @@ fn create_co_matrix(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
             }
         }
     }
-    println!("{:?}", co_matrix);
     co_matrix
 }
 
@@ -116,13 +116,54 @@ fn most_similar(
     }
 }
 
+fn create_contexts_target(corpus: Vec<usize>) {
+    let window_size: i32 = 1;
+    let mut contexts: Vec<Vec<usize>> = Vec::new();
+    let mut target: Vec<usize> = Vec::new();
+    let corpus_len: i32 = corpus.len() as i32;
+    for (idx, v) in corpus.iter().enumerate() {
+        let idx: i32 = idx as i32;
+        if idx != 0 && idx != corpus_len - 1 {
+            target.push(v.clone());
+        }
+    }
+    for idx in window_size..corpus_len - window_size {
+        let mut cs: Vec<usize> = Vec::new();
+        //for文の条件式をisizeにすればマイナスでループも可能
+        for t in -window_size..window_size + 1 {
+            if t == 0 {
+                continue;
+            }
+            let idx_t: i32 = idx + t;
+            let idx_t: usize = idx_t as usize;
+            cs.push(corpus[idx_t]);
+        }
+        contexts.push(cs);
+    }
+    println!("{:?}", contexts);
+    println!("{:?}", target);
+}
+
+fn convert_one_hot(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
+    let N: usize = corpus.len();
+    //dim check => loopとis_empty()でcountする
+    let count: i32 = 0;
+    while corpus.is_empty() {
+        count += 1;
+        &corpus = &corpus[0];
+    }
+    if count == 1 {
+        unimplemented!();
+    }
+}
+
 fn main() {
     let vocab_size: usize;
     let text = "You say goodbye and I say hello.";
     let (corpus, word_to_id, id_to_word) = preprocess(text);
     vocab_size = word_to_id.len();
 
-    let C = create_co_matrix(corpus, vocab_size);
+    let C = create_co_matrix(corpus.clone(), vocab_size);
     let mut c0 = vec![0; vocab_size];
     let mut c1 = vec![0; vocab_size];
     if let Some(target_word) = word_to_id.get("you") {
@@ -133,5 +174,6 @@ fn main() {
         c1 = C[target_word.clone()].to_owned();
     }
     cos_similarity(c0, c1);
-    most_similar("you".to_string(), word_to_id, id_to_word, C, 5)
+    most_similar("you".to_string(), word_to_id, id_to_word, C, 5);
+    create_contexts_target(corpus);
 }
