@@ -1,6 +1,8 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;
+mod dim;
+use dim::Matrix;
 
 //学習データを返却する関数
 fn preprocess(text: &str) -> (Vec<usize>, HashMap<String, usize>, HashMap<usize, String>) {
@@ -144,17 +146,14 @@ fn create_contexts_target(corpus: Vec<usize>) {
     println!("{:?}", target);
 }
 
-fn convert_one_hot(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
-    let N: usize = corpus.len();
-    //dim check => loopとis_empty()でcountする
-    let count: i32 = 0;
-    while corpus.is_empty() {
-        count += 1;
-        &corpus = &corpus[0];
-    }
-    if count == 1 {
-        unimplemented!();
-    }
+// fn convert_one_hot(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
+//     let N: usize = corpus.len();
+//     //dim check => loopとis_empty()でcountする
+//     let count: i32 = 0;
+// }
+fn playgroud(v: Vec<usize>) -> () {
+    let mx: Matrix<usize> = Matrix::new();
+
 }
 
 fn main() {
