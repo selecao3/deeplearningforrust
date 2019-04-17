@@ -1,1 +1,1 @@
-/Users/kazuha/develop/Rust/win_target_sample/target/x86_64-pc-windows-gnu/debug/win_target_sample.exe: /Users/kazuha/develop/Rust/win_target_sample/src/main.rs
+/home/kazuha/develop/Rust/deepLearningSample01/target/x86_64-pc-windows-gnu/debug/win_target_sample.exe: /home/kazuha/develop/Rust/deepLearningSample01/src/dim.rs /home/kazuha/develop/Rust/deepLearningSample01/src/main.rs
