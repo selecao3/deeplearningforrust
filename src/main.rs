@@ -2,12 +2,19 @@ use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;
 mod dim;
-use dim::Matrix;
+use dim::MatrixOne;
+use dim::MatrixTwo;
 
 //学習データを返却する関数
-fn preprocess(text: &str) -> (Vec<usize>, HashMap<String, usize>, HashMap<usize, String>) {
+fn preprocess(
+    text: &str,
+) -> (
+    MatrixOne<usize>,
+    HashMap<String, usize>,
+    HashMap<usize, String>,
+) {
     let mut new_id: usize;
-    let mut corpus: Vec<usize> = Vec::new();
+    let mut corpus: MatrixOne<usize> = MatrixOne::new();
     let mut word_to_id: HashMap<String, usize> = HashMap::new();
     let mut id_to_word: HashMap<usize, String> = HashMap::new();
     let text = text.to_lowercase().replace(".", " .");
@@ -23,10 +30,10 @@ fn preprocess(text: &str) -> (Vec<usize>, HashMap<String, usize>, HashMap<usize,
     return (corpus, word_to_id, id_to_word);
 }
 
-fn create_co_matrix(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
+fn create_co_matrix(corpus: MatrixOne<usize>, vocab_size: usize) -> MatrixTwo<usize> {
     let windows_size: usize = 1;
     let corpus_size: usize = corpus.len();
-    let mut co_matrix = vec![vec![0; vocab_size]; vocab_size];
+    let mut co_matrix: MatrixTwo<usize> = MatrixTwo::zeros_square(vocab_size);
 
     for (idx, word_id) in corpus.iter().enumerate() {
         for i in 1..windows_size + 1 {
@@ -83,7 +90,7 @@ fn most_similar(
     query: String,
     word_to_id: HashMap<String, usize>,
     id_to_word: HashMap<usize, String>,
-    word_matrix: Vec<Vec<usize>>,
+    word_matrix: MatrixTwo<usize>,
     top: usize,
 ) -> () {
     if word_to_id.keys().find(|&x| x == &query).is_none() {
@@ -118,7 +125,7 @@ fn most_similar(
     }
 }
 
-fn create_contexts_target(corpus: Vec<usize>) {
+fn create_contexts_target(corpus: MatrixOne<usize>) {
     let window_size: i32 = 1;
     let mut contexts: Vec<Vec<usize>> = Vec::new();
     let mut target: Vec<usize> = Vec::new();
@@ -144,16 +151,6 @@ fn create_contexts_target(corpus: Vec<usize>) {
     }
     println!("{:?}", contexts);
     println!("{:?}", target);
-}
-
-// fn convert_one_hot(corpus: Vec<usize>, vocab_size: usize) -> Vec<Vec<usize>> {
-//     let N: usize = corpus.len();
-//     //dim check => loopとis_empty()でcountする
-//     let count: i32 = 0;
-// }
-fn playgroud(v: Vec<usize>) -> () {
-    let mx: Matrix<usize> = Matrix::new();
-
 }
 
 fn main() {
