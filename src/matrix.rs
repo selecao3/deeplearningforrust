@@ -1,3 +1,4 @@
+use std::iter::FromIterator;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::Iter;
@@ -111,11 +112,6 @@ impl<T> MatrixTwo<T> {
         self.vec.len()
     }
 }
-// impl<T> MatrixThree<T> {
-//     pub fn get_row(&self, row: usize) -> RetType {
-//         let got_matrix = self.vec;
-//     }
-// }
 
 impl MatrixOne<usize> {
     //1次元or二次元で挙動が変わる（前者：2次元のone_hot,後者：3次元のone_hot）
@@ -125,8 +121,6 @@ impl MatrixOne<usize> {
         let mut one_hot = MatrixTwo::zeros(vocab_size, N);
         println!("{:?}", one_hot.vec);
         for (idx, word_id) in self.iter().enumerate() {
-            println!("idx: {:?}", idx);
-            println!("word_id: {:?}", word_id);
             let word_id: usize = word_id.clone();
             //idx行のword_id列に1を代入
             one_hot[idx][word_id] = 1;
@@ -140,10 +134,18 @@ impl MatrixTwo<usize> {
         let v: Vec<Vec<usize>> = vec![vec![0; x]; y];
         MatrixTwo { vec: v, dim: 2 }
     }
-    pub fn zeros_square(window_size: usize) -> MatrixTwo<usize> {
-        let v: Vec<Vec<usize>> = vec![vec![0; window_size]; window_size];
-        MatrixTwo { vec: v, dim: 2 }
+    //pub fn zeros_like(&self) -> MatrixTwo<usize> {
+    pub fn zeros_like(&self) -> () {
+        let zeros_vec: Vec<usize> = self
+            .vec
+            .iter()
+            .map(|v: &Vec<usize>| v.iter().map(|point: &usize| point * 0).collect())
+            .collect();
+        let hoge = vec![0; 10];
+        let unko: Vec<i32> = hoge.iter().map(|&x| x * 2).collect();
+        println!("{:?}", unko);
     }
+
     pub fn convert_one_hot(&self, vocab_size: usize) -> () {
         let N: usize = self.len();
         let C: usize = self.vec[0].len();

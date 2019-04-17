@@ -1,9 +1,9 @@
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-mod dim;
-use dim::MatrixOne;
-use dim::MatrixTwo;
+mod matrix;
+use matrix::MatrixOne;
+use matrix::MatrixTwo;
 
 //学習データを返却する関数
 fn preprocess(
@@ -33,7 +33,7 @@ fn preprocess(
 fn create_co_matrix(corpus: MatrixOne<usize>, vocab_size: usize) -> MatrixTwo<usize> {
     let windows_size: usize = 1;
     let corpus_size: usize = corpus.len();
-    let mut co_matrix: MatrixTwo<usize> = MatrixTwo::zeros_square(vocab_size);
+    let mut co_matrix: MatrixTwo<usize> = MatrixTwo::zeros(vocab_size, vocab_size);
 
     for (idx, word_id) in corpus.iter().enumerate() {
         for i in 1..windows_size + 1 {
