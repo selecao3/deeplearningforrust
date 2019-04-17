@@ -125,10 +125,10 @@ fn most_similar(
     }
 }
 
-fn create_contexts_target(corpus: MatrixOne<usize>) {
+fn create_contexts_target(corpus: MatrixOne<usize>) -> (MatrixTwo<usize>, MatrixOne<usize>) {
     let window_size: i32 = 1;
-    let mut contexts: Vec<Vec<usize>> = Vec::new();
-    let mut target: Vec<usize> = Vec::new();
+    let mut contexts: MatrixTwo<usize> = MatrixTwo::new();
+    let mut target: MatrixOne<usize> = MatrixOne::new();
     let corpus_len: i32 = corpus.len() as i32;
     for (idx, v) in corpus.iter().enumerate() {
         let idx: i32 = idx as i32;
@@ -149,8 +149,7 @@ fn create_contexts_target(corpus: MatrixOne<usize>) {
         }
         contexts.push(cs);
     }
-    println!("{:?}", contexts);
-    println!("{:?}", target);
+    return (contexts, target);
 }
 
 fn main() {
@@ -171,5 +170,8 @@ fn main() {
     }
     cos_similarity(c0, c1);
     most_similar("you".to_string(), word_to_id, id_to_word, C, 5);
-    create_contexts_target(corpus);
+    let (contexts, target) = create_contexts_target(corpus.clone());
+    contexts.print_matrix();
+    target.convert_one_hot(vocab_size);
+    contexts.convert_one_hot(vocab_size);
 }
