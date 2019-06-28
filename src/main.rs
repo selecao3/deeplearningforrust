@@ -1,9 +1,18 @@
+extern crate libm;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;
-mod matrix;
+
+//mod matrix;
+
+pub mod matrix;
+pub mod layers;
 use matrix::MatrixOne;
+use matrix::MatrixThree;
 use matrix::MatrixTwo;
+
+
+
 
 //学習データを返却する関数
 fn preprocess(
@@ -33,7 +42,7 @@ fn preprocess(
 fn create_co_matrix(corpus: MatrixOne<usize>, vocab_size: usize) -> MatrixTwo<usize> {
     let windows_size: usize = 1;
     let corpus_size: usize = corpus.len();
-    let mut co_matrix: MatrixTwo<usize> = MatrixTwo::zeros(vocab_size, vocab_size);
+    let mut co_matrix: MatrixTwo<usize> = MatrixTwo::<usize>::zeros(vocab_size, vocab_size);
 
     for (idx, word_id) in corpus.iter().enumerate() {
         for i in 1..windows_size + 1 {
@@ -154,6 +163,8 @@ fn create_contexts_target(corpus: MatrixOne<usize>) -> (MatrixTwo<usize>, Matrix
 
 fn main() {
     let vocab_size: usize;
+    let target_onehoted: MatrixTwo<usize>;
+    let contexts_onehoted: MatrixThree<usize>;
     let text = "You say goodbye and I say hello.";
     let (corpus, word_to_id, id_to_word) = preprocess(text);
     vocab_size = word_to_id.len();
@@ -171,7 +182,10 @@ fn main() {
     cos_similarity(c0, c1);
     most_similar("you".to_string(), word_to_id, id_to_word, C, 5);
     let (contexts, target) = create_contexts_target(corpus.clone());
-    contexts.print_matrix();
-    target.convert_one_hot(vocab_size);
-    contexts.convert_one_hot(vocab_size);
+    target_onehoted = target.convert_one_hot(vocab_size);
+    contexts_onehoted = contexts.convert_one_hot(vocab_size);
+    let zeros_contexts = MatrixTwo::<usize>::zeros(contexts.len_x(), contexts.len_y());
+    println!("debug!!");
+    zeros_contexts.print_matrix();
+
 }
