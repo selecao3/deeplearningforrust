@@ -113,7 +113,32 @@ impl<T> MatrixTwo<T> {
     pub fn len_x(&self) -> usize {
         self.vec[0].len()
     }
+}
 
+impl<T> MatrixThree<T> {
+    //Create 1-dimensional matrix
+    pub fn new() -> MatrixThree<T> {
+        let v: Vec<Vec<Vec<T>>> = Vec::new();
+        MatrixThree{ vec: v, dim: 3 }
+    }
+    pub fn iter(&self) -> Iter<Vec<Vec<T>>> {
+        self.vec.iter()
+    }
+    pub fn dim_get(&self) -> usize {
+        self.dim
+    }
+    pub fn push(&mut self, value: Vec<Vec<T>>) -> () {
+        self.vec.push(value)
+    }
+    pub fn len_z(&self) -> usize {
+        self.vec.len()
+    }
+    pub fn len_y(&self) -> usize {
+        self.vec[0].len()
+    }
+    pub fn len_x(&self) -> usize {
+        self.vec[1].len()
+    }
 }
 
 impl MatrixOne<usize> {
@@ -143,7 +168,7 @@ impl MatrixTwo<usize> {
     }
 
 
-    pub fn convert_one_hot(&self, vocab_size: usize) -> MatrixThree<usize> {
+    pub fn convert_one_hot(&self, vocab_size: usize) -> MatrixThree<f32> {
         let N: usize = self.len_y();
         let C: usize = self.len_x();
         let mut one_hot = MatrixThree::zeros(vocab_size, C, N);
@@ -151,7 +176,7 @@ impl MatrixTwo<usize> {
             for (idx_1, word_id) in word_ids.iter().enumerate() {
                 let word_id: usize = word_id.clone();
                 //word_id:x, idx_1:y, idx_0:z
-                one_hot[idx_0][idx_1][word_id] = 1;
+                one_hot[idx_0][idx_1][word_id] = 1.0;
             }
         }
         one_hot
@@ -163,9 +188,9 @@ impl MatrixTwo<usize> {
     }
 }
 
-impl MatrixThree<usize> {
-    pub fn zeros(x: usize, y: usize, z: usize) -> MatrixThree<usize> {
-        let v: Vec<Vec<Vec<usize>>> = vec![vec![vec![0; x]; y]; z];
+impl MatrixThree<f32> {
+    pub fn zeros(x: usize, y: usize, z: usize) -> MatrixThree<f32> {
+        let v: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.0; x]; y]; z];
         MatrixThree { vec: v, dim: 3 }
     }
     pub fn print_matrix(&self) -> () {
@@ -173,6 +198,13 @@ impl MatrixThree<usize> {
             println!("{:?}", target);
         }
     }
+    pub fn shape(self) -> (usize,usize,usize){
+        let z = self.vec;
+        let y = &z[0];
+        let x = &y[0];
+        (z.len(),y.len(),x.len())
+    }
+
 }
 
 //行列演算：map関数とかでもうちょいスマートにできるんじゃね？
@@ -184,6 +216,11 @@ impl MatrixTwo<f32>{
 
     pub fn zeros_like(&self) -> MatrixTwo<f32> {
         MatrixTwo::<f32>::zeros(self.len_x(),self.len_y())
+    }
+    pub fn shape(self) -> (usize,usize){
+        let z = self.vec;
+        let y = &z[0];
+        (z.len(),y.len())
     }
     pub fn sum(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
         let mut ans:MatrixTwo<f32> = MatrixTwo::new();
@@ -250,11 +287,11 @@ impl MatrixTwo<f32>{
         ans
     }
     //行列の列要素を全て足し上げ
-    pub fn matrixAllSum(&self) -> MatrixOne<f32>{
-        let mut ans:MatrixOne<f32> = MatrixOne::new();
+    pub fn matrixAllSum(&self) -> MatrixTwo<f32>{
+        let mut ans:MatrixTwo<f32> = MatrixTwo::new();
         for x in 0..self.len_x() {
             for y in 0..self.len_y() {
-                ans[x] += self[y][x];
+                ans[0][x] += self[y][x];
             }
         }
         ans

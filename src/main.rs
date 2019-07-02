@@ -164,7 +164,7 @@ fn create_contexts_target(corpus: MatrixOne<usize>) -> (MatrixTwo<usize>, Matrix
 fn main() {
     let vocab_size: usize;
     let target_onehoted: MatrixTwo<usize>;
-    let contexts_onehoted: MatrixThree<usize>;
+    let contexts_onehoted: MatrixThree<f32>;
     let text = "You say goodbye and I say hello.";
     let (corpus, word_to_id, id_to_word) = preprocess(text);
     vocab_size = word_to_id.len();
