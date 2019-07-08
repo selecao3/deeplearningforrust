@@ -98,6 +98,9 @@ impl<T> MatrixTwo<T> {
         let v: Vec<Vec<T>> = Vec::new();
         MatrixTwo { vec: v, dim: 2 }
     }
+    pub fn create_matrix(v: Vec<Vec<T>>) -> MatrixTwo<T>{
+        MatrixTwo { vec: v, dim: 2 }
+    }
     pub fn iter(&self) -> Iter<Vec<T>> {
         self.vec.iter()
     }
@@ -138,6 +141,12 @@ impl<T> MatrixThree<T> {
     }
     pub fn len_x(&self) -> usize {
         self.vec[1].len()
+    }
+    pub fn shape(self) -> (usize,usize,usize){
+        let z = self.vec;
+        let y = &z[0];
+        let x = &y[0];
+        (z.len(),y.len(),x.len())
     }
 }
 
@@ -198,13 +207,6 @@ impl MatrixThree<f32> {
             println!("{:?}", target);
         }
     }
-    pub fn shape(self) -> (usize,usize,usize){
-        let z = self.vec;
-        let y = &z[0];
-        let x = &y[0];
-        (z.len(),y.len(),x.len())
-    }
-
 }
 
 //行列演算：map関数とかでもうちょいスマートにできるんじゃね？

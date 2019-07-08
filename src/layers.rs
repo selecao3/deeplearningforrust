@@ -2,12 +2,14 @@ use crate::matrix::MatrixOne;
 use crate::matrix::MatrixTwo;
 use crate::matrix::MatrixThree;
 
+#[derive(Clone)]
 struct RNN {
     params: Vec<MatrixTwo<f32>>,
     grads: Vec<MatrixTwo<f32>>,
     cache: Option<(MatrixTwo<f32>, MatrixTwo<f32>, MatrixTwo<f32>)>,
 }
 
+#[derive(Clone)]
 struct TimeRNN {
     params: Vec<MatrixTwo<f32>>,
     grads: Vec<MatrixTwo<f32>>,
@@ -15,6 +17,24 @@ struct TimeRNN {
     h: Option<MatrixTwo<f32>>,
     dh: Option<MatrixTwo<f32>>,
     stateful: bool,
+}
+macro_rules! grads_init {
+    // ($count:expr) => {
+    //         let mut tmp_grads:Vec<MatrixTwo<f32>> = [];
+    //         $(
+    //             for i in $count {
+    //                 temp_grads.push(MatrixTwo::new());
+    //             }
+    //         )*
+    // };
+
+    //下のマクロおかしい
+     (@loop $v:ident, for $i:ident in $iter:expr) => (
+        let mut tmp_grads:Vec<MatrixTwo<f32>> = [];
+        for $i in 0..$iter {
+            tmp_grads.push(MatrixTwo::new());
+        }
+    );
 }
 
 impl RNN {
@@ -28,14 +48,14 @@ impl RNN {
             cache: cache,
         }
     }
-    fn forward(&mut self, x: MatrixTwo<f32>, h_prev: MatrixTwo<f32>) -> MatrixTwo<f32> {
+    fn forward(&mut self, x: MatrixTwo<f32>, h_prev: &MatrixTwo<f32>) -> MatrixTwo<f32> {
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
         let t = h_prev.dot(Wh).sum(&x.dot(Wx)).sum(b);
         let h_next = t.tanh();
 
-        self.cache = Some((x, h_prev, h_next.clone()));
+        self.cache = Some((x, h_prev.to_owned(), h_next.clone()));
         h_next
     }
     //3点リーダ：データの上書きを意味する(python)
@@ -79,12 +99,12 @@ impl TimeRNN {
     fn reset_state(mut self){
         self.h = Some(MatrixTwo::new());
     }
-    fn forward(mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
+    fn forward(&mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
         //z,y,xの順
-        let (N,T,D) = &xs.shape();
+        let (N,T,D) = xs.clone().shape();
         let (D,H) = Wx.clone().shape();
         
         //x,y,zの順(zeros)
@@ -94,17 +114,33 @@ impl TimeRNN {
         }
 
         for t in 0..T {
-            let layer = RNN::init(Wx.clone(),Wh.clone(),b.clone());
+
+            let mut layer = RNN::init(Wx.clone(),Wh.clone(),b.clone());
             //t列だけ抜き取りたい：xs
-            let xs_vec:Vec<Vec<f32>> = xs.iter().map(|v| v[t]).collect();
-            let xs_t:MatrixTwo<f32> = MatrixTwo{vec:xs_vec.to_owned() ,dim:2};
-            let hs_vec:Vec<Vec<f32>> = xs.iter().map(|v| v[t]).collect();
-            let hs_t:MatrixTwo<f32> = MatrixTwo{vec:xs_vec.to_owned(),dim:2};
-            self.h = Some(layer.forward(xs_t, self.h.unwrap()));
-            hs_t = self.h.unwrap();
-            self.layers.unwrap().push(layer);
+            let xs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
+            let xs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(xs_vec.clone());
+            let hs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
+            let mut hs_t:&MatrixTwo<f32> = &MatrixTwo::create_matrix(xs_vec);
+            //self.hを破壊的変更する
+            layer.forward(xs_t, &self.h.clone().unwrap());
+            hs_t = &self.h.clone().unwrap();
+            self.layers.clone().unwrap().push(layer);
         }
         hs
+    }
+    fn backward(self,dhs:MatrixThree<f32>) -> RetType {
+        let Wx = &self.params[0];
+        let Wh = &self.params[1];
+        let b = &self.params[2];
+        let (N,T,D) = dhs.clone().shape();
+        let (D,H) = Wx.clone().shape();
+
+        let dxs = MatrixThree::zeros(D, T, N);
+        let dh = MatrixTwo::new();
+        //macroを使った方がいい：macroは任意の引数を取れるため
+        //let grads = vec![(MatrixTwo()::new()3つ)];
+        let grads = grads_init!(3);
         
+
     }
 }
