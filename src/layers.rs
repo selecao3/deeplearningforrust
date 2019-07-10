@@ -18,24 +18,6 @@ struct TimeRNN {
     dh: Option<MatrixTwo<f32>>,
     stateful: bool,
 }
-macro_rules! grads_init {
-    // ($count:expr) => {
-    //         let mut tmp_grads:Vec<MatrixTwo<f32>> = [];
-    //         $(
-    //             for i in $count {
-    //                 temp_grads.push(MatrixTwo::new());
-    //             }
-    //         )*
-    // };
-
-    //下のマクロおかしい
-     (@loop $v:ident, for $i:ident in $iter:expr) => (
-        let mut tmp_grads:Vec<MatrixTwo<f32>> = [];
-        for $i in 0..$iter {
-            tmp_grads.push(MatrixTwo::new());
-        }
-    );
-}
 
 impl RNN {
     fn init(Wx: MatrixTwo<f32>, Wh: MatrixTwo<f32>, b: MatrixTwo<f32>) -> RNN {
@@ -128,19 +110,39 @@ impl TimeRNN {
         }
         hs
     }
-    fn backward(self,dhs:MatrixThree<f32>) -> RetType {
+    fn backward(self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
+        let mut layer:RNN;
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
         let (N,T,D) = dhs.clone().shape();
         let (D,H) = Wx.clone().shape();
 
-        let dxs = MatrixThree::zeros(D, T, N);
+        let mut dxs = MatrixThree::zeros(D, T, N);
         let dh = MatrixTwo::new();
         //macroを使った方がいい：macroは任意の引数を取れるため
-        //let grads = vec![(MatrixTwo()::new()3つ)];
-        let grads = grads_init!(3);
-        
+        let grads = vec![(MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new())];
+        for t in T..0 {
+            if let Some(layer_some) = self.layers.clone(){
+                layer = layer_some[t].clone();
+            }else {
+                panic!("Not layer");
+            }
+            let dhs_vec:Vec<Vec<f32>> = dhs.iter().map(|v| &v[t]).cloned().collect();
+            let dhs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dhs_vec.clone());
 
+            let dxs_vec:Vec<Vec<f32>> = dxs.iter().map(|v| &v[t]).cloned().collect();
+            let mut dxs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dxs_vec.clone());
+
+            //dxsのt固定の２行列にdxを代入したい...
+            let (dx,dh) = layer.backward(dhs_t.sum(&dh));
+            dxs_t = dxs_t.sum(&dx);
+            dxs.iter().map(|v| &v[t] = dx.vec);
+            for (i,grad) in layer.grads.iter().enumerate() {
+                self.grads[i] = grad.clone();
+            }
+            self.dh = Some(dh);
+        }
+        dxs_t
     }
 }

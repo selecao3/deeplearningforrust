@@ -233,6 +233,7 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //行列-スカラのメソッド
     pub fn scalar_minus(&self,target:f32) -> MatrixTwo<f32>{
         let mut ans:MatrixTwo<f32> = MatrixTwo::new();
         for i in 0..self.len_y() {
@@ -242,6 +243,7 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //dot演算
     pub fn dot(&self, mat2:&MatrixTwo<f32>) -> MatrixTwo<f32>{
         let mut tmp:usize = 0;
         let len_x = self.len_x();
@@ -260,6 +262,7 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //行列の掛け算
     pub fn mat_scalar(&self, mat:MatrixTwo<f32>) -> MatrixTwo<f32>{
         let len_x = self.len_x();
         let len_y = self.len_y();
@@ -271,6 +274,7 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //行列版powメソッド
     pub fn pow(&self, pow_target:f32) -> MatrixTwo<f32>{
         let mut tmp:usize = 0;
         let len_x = self.len_x();
@@ -298,6 +302,8 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    
+    //行列の各項に対し、tanhの計算
     pub fn tanh(&self) -> MatrixTwo<f32>{
         let mut ans = MatrixTwo::new();
         let len_y = self.len_y();
@@ -310,6 +316,7 @@ impl MatrixTwo<f32>{
         ans
         
     }
+    //転置行列
     fn inverse(&self)->MatrixTwo<f32>{
         let len_x = self.len_x();
         let len_y = self.len_y();
