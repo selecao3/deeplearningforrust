@@ -1,3 +1,4 @@
+use std::vec::IntoIter;
 use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::Iter;
@@ -116,6 +117,9 @@ impl<T> MatrixTwo<T> {
     pub fn len_x(&self) -> usize {
         self.vec[0].len()
     }
+    pub fn into_iter(mut self) -> IntoIter<Vec<T>>{
+        self.vec.into_iter()
+    }
 }
 
 impl<T> MatrixThree<T> {
@@ -148,6 +152,7 @@ impl<T> MatrixThree<T> {
         let x = &y[0];
         (z.len(),y.len(),x.len())
     }
+
 }
 
 impl MatrixOne<usize> {

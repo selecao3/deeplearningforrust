@@ -110,39 +110,59 @@ impl TimeRNN {
         }
         hs
     }
-    fn backward(self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
+    fn backward(mut self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
         let mut layer:RNN;
+        let mut dh:MatrixTwo<f32>;
+        // let mut dxs_2:MatrixTwo<f32>;
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
-        let (N,T,D) = dhs.clone().shape();
-        let (D,H) = Wx.clone().shape();
+        //全てD:x,N:y,T:zの順にする方が後々よい
+        //let (N,T,D) = dhs.clone().shape();
+        let (H,N,T) = dhs.clone().shape();
+        let (D,T) = Wx.clone().shape();
 
+        //let mut dxs = MatrixThree::zeros(D, T, N);
+        //pythonだとz,y,xの順：np.empty
+        //N,T,D => D,T,N
         let mut dxs = MatrixThree::zeros(D, T, N);
-        let dh = MatrixTwo::new();
+        dh = MatrixTwo::new();
         //macroを使った方がいい：macroは任意の引数を取れるため
-        let grads = vec![(MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new())];
+        let mut grads = vec![MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new()];
         for t in T..0 {
             if let Some(layer_some) = self.layers.clone(){
                 layer = layer_some[t].clone();
             }else {
                 panic!("Not layer");
             }
-            let dhs_vec:Vec<Vec<f32>> = dhs.iter().map(|v| &v[t]).cloned().collect();
-            let dhs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dhs_vec.clone());
+            // let dhs_vec:Vec<Vec<f32>> = dhs.iter().map(|v| &v[t]).cloned().collect();
+            // let dhs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dhs_vec.clone());
 
-            let dxs_vec:Vec<Vec<f32>> = dxs.iter().map(|v| &v[t]).cloned().collect();
-            let mut dxs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dxs_vec.clone());
+            // let dxs_vec:Vec<Vec<f32>> = dxs.iter().map(|v| &v[t]).cloned().collect();
+            // let mut dxs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dxs_vec.clone());
+            let dhs_2 = MatrixTwo::create_matrix(dhs[t].clone());
+            // dxs_2 = MatrixTwo::create_matrix(dxs[t].clone());
+            // let aaa = dxs[t];
+
+            //dxs[t].spl
+            //
 
             //dxsのt固定の２行列にdxを代入したい...
-            let (dx,dh) = layer.backward(dhs_t.sum(&dh));
-            dxs_t = dxs_t.sum(&dx);
-            dxs.iter().map(|v| &v[t] = dx.vec);
+            let (dx,dh_tmp) = layer.backward(dhs_2.sum(&dh));
+            dh = dh_tmp;
+            //dxsを最終的に返さないといけない
+            // dxs_2 = dx;
+            &dxs[t].splice(0..,dx.into_iter());
+            // let a = dxs[0][t];
+            // dxs.iter().map(|v| v.splice(0.., dx.vec));
             for (i,grad) in layer.grads.iter().enumerate() {
-                self.grads[i] = grad.clone();
+                grads[i] = grads[i].sum(grad);
             }
-            self.dh = Some(dh);
         }
-        dxs_t
+        for (i,grad) in grads.iter().enumerate() {
+            self.grads[i] = grad.clone();
+        }
+        self.dh = Some(dh);
+        dxs
     }
 }
