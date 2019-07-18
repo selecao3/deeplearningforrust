@@ -1,4 +1,5 @@
 extern crate libm;
+extern crate rand;
 use std::collections::BTreeMap;
 use std::collections::HashMap;
 use std::iter::FromIterator;

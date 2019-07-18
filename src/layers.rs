@@ -1,16 +1,17 @@
+
 use crate::matrix::MatrixOne;
 use crate::matrix::MatrixTwo;
 use crate::matrix::MatrixThree;
 
-#[derive(Clone)]
-struct RNN {
+#[derive(Clone,Debug)]
+pub struct RNN {
     params: Vec<MatrixTwo<f32>>,
     grads: Vec<MatrixTwo<f32>>,
-    cache: Option<(MatrixTwo<f32>, MatrixTwo<f32>, MatrixTwo<f32>)>,
+    pub cache: Option<(MatrixTwo<f32>, MatrixTwo<f32>, MatrixTwo<f32>)>,
 }
 
-#[derive(Clone)]
-struct TimeRNN {
+#[derive(Clone,Debug)]
+pub struct TimeRNN {
     params: Vec<MatrixTwo<f32>>,
     grads: Vec<MatrixTwo<f32>>,
     layers: Option<Vec<RNN>>,
@@ -20,7 +21,7 @@ struct TimeRNN {
 }
 
 impl RNN {
-    fn init(Wx: MatrixTwo<f32>, Wh: MatrixTwo<f32>, b: MatrixTwo<f32>) -> RNN {
+    pub fn init(Wx: MatrixTwo<f32>, Wh: MatrixTwo<f32>, b: MatrixTwo<f32>) -> RNN {
         let params = vec![Wx.clone(), Wh.clone(), b.clone()];
         let grads = vec![Wx.zeros_like(), Wh.zeros_like(), b.zeros_like()];
         let cache = None;
@@ -30,7 +31,7 @@ impl RNN {
             cache: cache,
         }
     }
-    fn forward(&mut self, x: MatrixTwo<f32>, h_prev: &MatrixTwo<f32>) -> MatrixTwo<f32> {
+    pub fn forward(&mut self, x: MatrixTwo<f32>, h_prev: &MatrixTwo<f32>) -> MatrixTwo<f32> {
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
@@ -49,10 +50,10 @@ impl RNN {
 
         let dt = dh_next.mat_scalar(h_next.pow(2f32).scalar_minus(1f32));
         let db = dt.matrixAllSum();
-        let dWh = h_prev.dot(&dt);
-        let dh_prev = dt.dot(Wh);
-        let dWx = x.dot(&dt);
-        let dx = dt.dot(&Wx);
+        let dWh = h_prev.inverse().dot(&dt);
+        let dh_prev = dt.dot(&Wh.inverse());
+        let dWx = x.inverse().dot(&dt);
+        let dx = dt.dot(&Wx.inverse());
         &self.grads.clear();
         &self.grads.insert(0, dWx);
         &self.grads.insert(1, dWh);
@@ -62,7 +63,7 @@ impl RNN {
 }
 
 impl TimeRNN {
-    fn init(Wx: MatrixTwo<f32>, Wh: MatrixTwo<f32>, b: MatrixTwo<f32>, stateful: bool) -> TimeRNN {
+    pub fn init(Wx: MatrixTwo<f32>, Wh: MatrixTwo<f32>, b: MatrixTwo<f32>, stateful: bool) -> TimeRNN {
         let params = vec![Wx.clone(), Wh.clone(), b.clone()];
         let grads = vec![Wx.zeros_like(), Wh.zeros_like(), b.zeros_like()];
         let stateful = stateful;
@@ -75,13 +76,13 @@ impl TimeRNN {
             stateful: stateful,
         }
     }
-    fn set_state(mut self,h:MatrixTwo<f32>){
+    pub fn set_state(mut self,h:MatrixTwo<f32>) ->(){
         self.h = Some(h);
     }
-    fn reset_state(mut self){
+    pub fn reset_state(mut self){
         self.h = Some(MatrixTwo::new());
     }
-    fn forward(&mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
+    pub fn forward(&mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
@@ -110,7 +111,7 @@ impl TimeRNN {
         }
         hs
     }
-    fn backward(mut self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
+    pub fn backward(mut self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
         let mut layer:RNN;
         let mut dh:MatrixTwo<f32>;
         // let mut dxs_2:MatrixTwo<f32>;

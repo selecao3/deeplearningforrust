@@ -3,18 +3,19 @@ use std::ops::Index;
 use std::ops::IndexMut;
 use std::slice::Iter;
 use std::slice::SliceIndex;
+use rand::Rng;
 
-#[derive(Clone)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct MatrixOne<T> {
     vec: Vec<T>,
     dim: usize,
 }
-#[derive(Clone)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct MatrixTwo<T> {
     vec: Vec<Vec<T>>,
     dim: usize,
 }
-#[derive(Clone)]
+#[derive(Clone,Debug,PartialEq)]
 pub struct MatrixThree<T> {
     vec: Vec<Vec<Vec<T>>>,
     dim: usize,
@@ -117,7 +118,7 @@ impl<T> MatrixTwo<T> {
     pub fn len_x(&self) -> usize {
         self.vec[0].len()
     }
-    pub fn into_iter(mut self) -> IntoIter<Vec<T>>{
+    pub fn into_iter(self) -> IntoIter<Vec<T>>{
         self.vec.into_iter()
     }
 }
@@ -195,7 +196,7 @@ impl MatrixTwo<usize> {
         }
         one_hot
     }
-    pub fn print_matrix(&self) -> () {
+    pub fn print_matrix(&self){
         for target in self.vec.iter() {
             println!("{:?}", target);
         }
@@ -224,13 +225,35 @@ impl MatrixTwo<f32>{
     pub fn zeros_like(&self) -> MatrixTwo<f32> {
         MatrixTwo::<f32>::zeros(self.len_x(),self.len_y())
     }
+    //This function used tests;
+    pub fn rand_generate(x:usize,y:usize) -> MatrixTwo<f32>{
+        let mut png = rand::thread_rng();
+        let mut vec:Vec<Vec<f32>> = Vec::new();
+
+        for _i in 0..y{
+            let mut tmp_vec:Vec<f32> = Vec::<f32>::with_capacity(x);
+            for _j in 0..x{
+                let r:f32 = png.gen_range(-1.0,1.0);
+                tmp_vec.push(r);
+            }
+            vec.push(tmp_vec);
+        }
+        MatrixTwo::create_matrix(vec)
+    }
     pub fn shape(self) -> (usize,usize){
         let z = self.vec;
         let y = &z[0];
         (z.len(),y.len())
     }
     pub fn sum(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
-        let mut ans:MatrixTwo<f32> = MatrixTwo::new();
+        if !self.match_check(&mat){
+            println!("self:");
+            self.print_matrix();
+            println!("mat:");
+            mat.print_matrix();
+            panic!("行と列が一致していないのでsum演算ができない");
+        }
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
         for i in 0..self.len_y() {
             for j in 0..self.len_x() {
                 ans[i][j] = self[i][j] + mat[i][j];
@@ -240,7 +263,8 @@ impl MatrixTwo<f32>{
     }
     //行列-スカラのメソッド
     pub fn scalar_minus(&self,target:f32) -> MatrixTwo<f32>{
-        let mut ans:MatrixTwo<f32> = MatrixTwo::new();
+
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
         for i in 0..self.len_y() {
             for j in 0..self.len_x() {
                 ans[i][j] = self[i][j] - target;
@@ -249,29 +273,54 @@ impl MatrixTwo<f32>{
         ans
     }
     //dot演算
+    //selfのy>mat2のyの時でないと成立しない＝＞それ以外はpanic!を起こすシステムを作る
     pub fn dot(&self, mat2:&MatrixTwo<f32>) -> MatrixTwo<f32>{
-        let mut tmp:usize = 0;
-        let len_x = self.len_x();
-        let len_y = self.len_y();
-        let mut ans = MatrixTwo::new();
-        let inv_mat = mat2.inverse();
-        for y in 0..len_y{
-            for x in 0..len_x{
-                ans[y][tmp] += self[y][x] * inv_mat[y][x];
-            }
-            if tmp != len_x {
-                tmp += 1;
-            }else {
-                tmp = 0;
+        self.dot_check(mat2);
+        let ans_y = self.len_y();
+        let ans_x = self.len_x();
+        //let ans_x = mat2.len_x();
+        let mat_x = mat2.len_x();
+        // let mat2_x = mat2.len_x();
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(mat_x, ans_y);
+        let mat2_new:MatrixTwo<f32>;
+        if mat2.len_y() == 1 {
+            mat2_new = mat2.clone();
+        }else {
+            mat2_new = mat2.inverse();
+        }
+        //ここの3段forループどうにかしたい
+        for y in 0..ans_y{
+            for t in 0..mat_x{
+                for x in 0..ans_x{
+                    ans[y][t] = ans[y][t] + self[y][x] * mat2_new[t][x];
+                }
+
             }
         }
         ans
     }
+    fn dot_check(&self,mat2:&MatrixTwo<f32>){
+        if &self.len_x() != &mat2.len_y() && &self.len_x() != &mat2.len_x() {
+            panic!("行と列が一致しない");
+        }
+    }
+    fn match_check(&self,mat:&MatrixTwo<f32>) -> bool{
+        if self.len_x() == mat.len_x() && self.len_y() == mat.len_y() {
+            true
+        }else{
+            false
+        }
+    }
     //行列の掛け算
     pub fn mat_scalar(&self, mat:MatrixTwo<f32>) -> MatrixTwo<f32>{
+        if !self.match_check(&mat){
+            panic!("行と列が一致していないのでスカラ演算ができない");
+        }
         let len_x = self.len_x();
         let len_y = self.len_y();
-        let mut ans = MatrixTwo::new();
+        let mut ans = MatrixTwo::<f32>::zeros(len_x,len_y);
+        self.print_matrix();
+        mat.print_matrix();
         for y in 0..len_y{
             for x in 0..len_x{
                 ans[y][x] = self[y][x] * mat[y][x];
@@ -281,25 +330,19 @@ impl MatrixTwo<f32>{
     }
     //行列版powメソッド
     pub fn pow(&self, pow_target:f32) -> MatrixTwo<f32>{
-        let mut tmp:usize = 0;
         let len_x = self.len_x();
         let len_y = self.len_y();
-        let mut ans = MatrixTwo::new();
+        let mut ans = MatrixTwo::<f32>::zeros(len_x,len_y);
         for y in 0..len_y{
             for x in 0..len_x{
-                ans[y][tmp] = libm::pow(self[y][x] as f64 , pow_target as f64) as f32;
-            }
-            if tmp != len_x {
-                tmp += 1;
-            }else {
-                tmp = 0;
+                ans[y][x] = libm::pow(self[y][x] as f64 , pow_target as f64) as f32;
             }
         }
         ans
     }
     //行列の列要素を全て足し上げ
     pub fn matrixAllSum(&self) -> MatrixTwo<f32>{
-        let mut ans:MatrixTwo<f32> = MatrixTwo::new();
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
         for x in 0..self.len_x() {
             for y in 0..self.len_y() {
                 ans[0][x] += self[y][x];
@@ -310,7 +353,8 @@ impl MatrixTwo<f32>{
     
     //行列の各項に対し、tanhの計算
     pub fn tanh(&self) -> MatrixTwo<f32>{
-        let mut ans = MatrixTwo::new();
+
+        let mut ans = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
         let len_y = self.len_y();
         let len_x = self.len_x();
         for y in 0..len_y {
@@ -321,17 +365,22 @@ impl MatrixTwo<f32>{
         ans
         
     }
-    //転置行列
-    fn inverse(&self)->MatrixTwo<f32>{
+    //転置行列:privete method!!
+    pub fn inverse(&self)->MatrixTwo<f32>{
         let len_x = self.len_x();
         let len_y = self.len_y();
-        let mut inv_mat = MatrixTwo::<f32>::zeros(len_x, len_y);
+        let mut inv_mat = MatrixTwo::<f32>::zeros(len_y, len_x);
         for i in 0..len_x {
             for j in 0..len_y {
                 inv_mat[i][j] = self[j][i];
             }
         }
         inv_mat
+    }
+    pub fn print_matrix(&self){
+        for target in self.vec.iter() {
+            println!("{:?}", target);
+        }
     }
 }
 
