@@ -129,6 +129,9 @@ impl<T> MatrixThree<T> {
         let v: Vec<Vec<Vec<T>>> = Vec::new();
         MatrixThree{ vec: v, dim: 3 }
     }
+    pub fn create_matrix(v: Vec<Vec<Vec<T>>>) -> MatrixThree<T>{
+        MatrixThree{ vec: v, dim: 3 }
+    }
     pub fn iter(&self) -> Iter<Vec<Vec<T>>> {
         self.vec.iter()
     }
@@ -208,6 +211,25 @@ impl MatrixThree<f32> {
         let v: Vec<Vec<Vec<f32>>> = vec![vec![vec![0.0; x]; y]; z];
         MatrixThree { vec: v, dim: 3 }
     }
+    //This function used tests;
+    pub fn rand_generate(x:usize,y:usize,z:usize) -> MatrixThree<f32>{
+        let mut png = rand::thread_rng();
+        let mut vec_two:Vec<Vec<f32>> = Vec::new();
+        let mut vec_three:Vec<Vec<Vec<f32>>> = Vec::new();
+
+        for _k in 0..z{
+            for _i in 0..y{
+                let mut tmp_vec:Vec<f32> = Vec::<f32>::with_capacity(x);
+                for _j in 0..x{
+                    let r:f32 = png.gen_range(-1.0,1.0);
+                    tmp_vec.push(r);
+                }
+                vec_two.push(tmp_vec);
+            }
+            vec_three.push(vec_two.clone());
+        }
+        MatrixThree::create_matrix(vec_three)
+    }
     pub fn print_matrix(&self) -> () {
         for target in self.vec.iter() {
             println!("{:?}", target);
@@ -276,12 +298,7 @@ impl MatrixTwo<f32>{
     //selfのy>mat2のyの時でないと成立しない＝＞それ以外はpanic!を起こすシステムを作る
     pub fn dot(&self, mat2:&MatrixTwo<f32>) -> MatrixTwo<f32>{
         self.dot_check(mat2);
-        let ans_y = self.len_y();
-        let ans_x = self.len_x();
-        //let ans_x = mat2.len_x();
-        let mat_x = mat2.len_x();
-        // let mat2_x = mat2.len_x();
-        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(mat_x, ans_y);
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(mat2.len_x(), self.len_y());
         let mat2_new:MatrixTwo<f32>;
         if mat2.len_y() == 1 {
             mat2_new = mat2.clone();
@@ -289,9 +306,11 @@ impl MatrixTwo<f32>{
             mat2_new = mat2.inverse();
         }
         //ここの3段forループどうにかしたい
-        for y in 0..ans_y{
-            for t in 0..mat_x{
-                for x in 0..ans_x{
+        for y in 0..self.len_y(){
+            for t in 0..mat2_new.len_y(){
+                for x in 0..self.len_x(){
+                    //1×1の時、mat2_new[1]にアクセスするためpanicになる
+                    //右の行列が1列の場合、1列に変換してもいいためmat_xがバグる
                     ans[y][t] = ans[y][t] + self[y][x] * mat2_new[t][x];
                 }
 
@@ -300,7 +319,9 @@ impl MatrixTwo<f32>{
         ans
     }
     fn dot_check(&self,mat2:&MatrixTwo<f32>){
-        if &self.len_x() != &mat2.len_y() && &self.len_x() != &mat2.len_x() {
+        if self.len_x() != mat2.len_y(){
+            println!("len_x: {:?}",self.len_x());
+            println!("len_y: {:?}",mat2.len_y());
             panic!("行と列が一致しない");
         }
     }

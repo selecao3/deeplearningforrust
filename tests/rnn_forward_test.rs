@@ -4,13 +4,18 @@ use matrix::*;
 use rand::Rng;
 
 
+//N:13,H:1,D:41
 #[test]
 fn rnn_forward_test(){
     let mut rng = rand::thread_rng();
     //0の時、panicになる
-    let N:usize = rng.gen_range(1,50);
-    let H:usize = rng.gen_range(1,50);
-    let D:usize = rng.gen_range(1,50);
+    //D==1の時、panicになる
+    let N:usize = rng.gen_range(1,5);
+    let H:usize = rng.gen_range(1,5);
+    let D:usize = rng.gen_range(1,5);
+    // let N:usize = 13;
+    // let H:usize = 4;
+    // let D:usize = 1;
     let matrix1:MatrixTwo<f32> = MatrixTwo::rand_generate(H,D);
     let matrix2:MatrixTwo<f32> = MatrixTwo::rand_generate(H,H);
     let matrix3:MatrixTwo<f32> = MatrixTwo::rand_generate(H,N);

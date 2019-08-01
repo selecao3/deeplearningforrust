@@ -1,7 +1,6 @@
-
-use crate::matrix::MatrixOne;
 use crate::matrix::MatrixTwo;
 use crate::matrix::MatrixThree;
+
 
 #[derive(Clone,Debug)]
 pub struct RNN {
@@ -15,7 +14,7 @@ pub struct TimeRNN {
     params: Vec<MatrixTwo<f32>>,
     grads: Vec<MatrixTwo<f32>>,
     layers: Option<Vec<RNN>>,
-    h: Option<MatrixTwo<f32>>,
+    pub h: Option<MatrixTwo<f32>>,
     dh: Option<MatrixTwo<f32>>,
     stateful: bool,
 }
@@ -35,6 +34,8 @@ impl RNN {
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
+        h_prev.dot(Wh);
+        x.dot(Wx);
         let t = h_prev.dot(Wh).sum(&x.dot(Wx)).sum(b);
         let h_next = t.tanh();
 
@@ -76,11 +77,14 @@ impl TimeRNN {
             stateful: stateful,
         }
     }
-    pub fn set_state(mut self,h:MatrixTwo<f32>) ->(){
-        self.h = Some(h);
+    pub fn set_state(&mut self,h:MatrixTwo<f32>) ->(){
+        // 構造体のメンバは参照にできない。つまり、普通の代入では構造体のメンバの値を変更することはできない
+        // self.h = Some(h);
+        // 下のget_or_insertメソッドを使えば変更することができる
+        self.h.get_or_insert(h);
     }
-    pub fn reset_state(mut self){
-        self.h = Some(MatrixTwo::new());
+    pub fn reset_state(&mut self){
+        &self.h.take();
     }
     pub fn forward(&mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
         let Wx = &self.params[0];
@@ -96,6 +100,7 @@ impl TimeRNN {
             self.h = Some(MatrixTwo::<f32>::zeros(H,N));
         }
 
+        let mut tmp_vec:Vec<RNN> = Vec::new();
         for t in 0..T {
 
             let mut layer = RNN::init(Wx.clone(),Wh.clone(),b.clone());
@@ -107,7 +112,8 @@ impl TimeRNN {
             //self.hを破壊的変更する
             layer.forward(xs_t, &self.h.clone().unwrap());
             hs_t = &self.h.clone().unwrap();
-            self.layers.clone().unwrap().push(layer);
+            tmp_vec.push(layer);
+            self.layers.clone().get_or_insert(tmp_vec.clone());
         }
         hs
     }
