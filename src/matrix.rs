@@ -215,7 +215,7 @@ impl MatrixThree<f32> {
     pub fn rand_generate(x:usize,y:usize,z:usize) -> MatrixThree<f32>{
         let mut png = rand::thread_rng();
         let mut vec_two:Vec<Vec<f32>> = Vec::new();
-        let mut vec_three:Vec<Vec<Vec<f32>>> = Vec::new();
+        let mut mat_three:MatrixThree<f32> = MatrixThree::new();
 
         for _k in 0..z{
             for _i in 0..y{
@@ -224,11 +224,34 @@ impl MatrixThree<f32> {
                     let r:f32 = png.gen_range(-1.0,1.0);
                     tmp_vec.push(r);
                 }
-                vec_two.push(tmp_vec);
+                vec_two.push(tmp_vec.clone());
+                //clearしないと以前のデータを引き継いだままループを再開する
+                tmp_vec.clear();
             }
-            vec_three.push(vec_two.clone());
+            mat_three.push(vec_two.clone());
+            //clearしないと以前のデータを引き継いだままループを再開する
+            vec_two.clear();
         }
-        MatrixThree::create_matrix(vec_three)
+        for z in 0..mat_three.len_z(){
+            println!("mat_three[z]: {:?}",mat_three[z]);
+        }
+        mat_three
+    }
+
+
+    //usize型の引数によって、特定の２行列に破壊的変更を加える
+    //status:0=>selfのx-y行列を変更
+    //status:1=>selfのx-z行列を変更
+    pub fn copy_two_matrix(&mut self,target:&MatrixTwo<f32>,point:usize,status:usize ){
+        if status== 0 {
+           self[point] = target.vec.clone();
+        }else if (status == 1){
+            //selfのx-z行列にtargetを代入する形にしないといけない
+            for z in 0..self.len_z(){
+                // ans_mat2.push(self[z][point].clone());
+                self[z][point] = target[z].clone();
+            }
+        }
     }
     pub fn print_matrix(&self) -> () {
         for target in self.vec.iter() {
@@ -386,7 +409,7 @@ impl MatrixTwo<f32>{
         ans
         
     }
-    //転置行列:privete method!!
+    //転置行列
     pub fn inverse(&self)->MatrixTwo<f32>{
         let len_x = self.len_x();
         let len_y = self.len_y();

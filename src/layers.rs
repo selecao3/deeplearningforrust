@@ -34,8 +34,6 @@ impl RNN {
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
-        h_prev.dot(Wh);
-        x.dot(Wx);
         let t = h_prev.dot(Wh).sum(&x.dot(Wx)).sum(b);
         let h_next = t.tanh();
 
@@ -86,7 +84,7 @@ impl TimeRNN {
     pub fn reset_state(&mut self){
         &self.h.take();
     }
-    pub fn forward(&mut self,xs:MatrixThree<f32>) -> MatrixThree<f32>{
+    pub fn forward(&mut self,mut xs:MatrixThree<f32>) -> MatrixThree<f32>{
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
@@ -95,23 +93,40 @@ impl TimeRNN {
         let (D,H) = Wx.clone().shape();
         
         //x,y,zの順(zeros)
-        let hs = MatrixThree::zeros(D, T, N);
+        let mut hs = MatrixThree::zeros(D, T, N);
         if !self.stateful || self.h.is_none()  {
             self.h = Some(MatrixTwo::<f32>::zeros(H,N));
         }
 
+        println!("xs: ");
+        xs.print_matrix();
         let mut tmp_vec:Vec<RNN> = Vec::new();
         for t in 0..T {
 
             let mut layer = RNN::init(Wx.clone(),Wh.clone(),b.clone());
             //t列だけ抜き取りたい：xs
-            let xs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
-            let xs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(xs_vec.clone());
-            let hs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
-            let mut hs_t:&MatrixTwo<f32> = &MatrixTwo::create_matrix(xs_vec);
-            //self.hを破壊的変更する
-            layer.forward(xs_t, &self.h.clone().unwrap());
-            hs_t = &self.h.clone().unwrap();
+            // let xs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
+            // let xs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(xs_vec.clone());
+            // let hs_vec:Vec<Vec<f32>> = xs.iter().map(|v| &v[t]).cloned().collect();
+            // let mut hs_t:&MatrixTwo<f32> = &MatrixTwo::create_matrix(xs_vec);
+
+            //xs[:,t,:]に当たる二次元行列を作成する
+            let mut xs_mat_two:MatrixTwo<f32> = MatrixTwo::new();
+            for z in 0..xs.len_z(){
+                xs_mat_two.push(xs[z][t].clone());
+                println!("xs_mat_two: ");
+                xs_mat_two.print_matrix();
+            }
+
+            //get_or_insertはsomeでラップされていると引数の値に変更されない。つまりNone出ないといけない
+            //self.h.get_or_insert(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
+            self.h = Some(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
+            if let Some(h) = &self.h{
+                hs.copy_two_matrix(&h, t, 1);
+                h.print_matrix();
+            }
+            //self.h.get_or_insert(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
+            // hs_t = &self.h.clone().unwrap();
             tmp_vec.push(layer);
             self.layers.clone().get_or_insert(tmp_vec.clone());
         }
