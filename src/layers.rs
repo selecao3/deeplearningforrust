@@ -98,8 +98,6 @@ impl TimeRNN {
             self.h = Some(MatrixTwo::<f32>::zeros(H,N));
         }
 
-        println!("xs: ");
-        xs.print_matrix();
         let mut tmp_vec:Vec<RNN> = Vec::new();
         for t in 0..T {
 
@@ -111,80 +109,95 @@ impl TimeRNN {
             // let mut hs_t:&MatrixTwo<f32> = &MatrixTwo::create_matrix(xs_vec);
 
             //xs[:,t,:]に当たる二次元行列を作成する
-            let mut xs_mat_two:MatrixTwo<f32> = MatrixTwo::new();
-            for z in 0..xs.len_z(){
-                xs_mat_two.push(xs[z][t].clone());
-                println!("xs_mat_two: ");
-                xs_mat_two.print_matrix();
-            }
+            // let mut xs_mat_two:MatrixTwo<f32> = MatrixTwo::new();
+            // for z in 0..xs.len_z(){
+            //     xs_mat_two.push(xs[z][t].clone());
+            //     println!("xs_mat_two: ");
+            //     xs_mat_two.print_matrix();
+            // }
+            let xs_mat_two:MatrixTwo<f32> = mat3_convert_mat2(&xs, t);
+            
 
             //get_or_insertはsomeでラップされていると引数の値に変更されない。つまりNone出ないといけない
             //self.h.get_or_insert(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
             self.h = Some(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
             if let Some(h) = &self.h{
                 hs.copy_two_matrix(&h, t, 1);
-                h.print_matrix();
             }
             //self.h.get_or_insert(layer.forward(xs_mat_two, &self.h.clone().unwrap()));
             // hs_t = &self.h.clone().unwrap();
             tmp_vec.push(layer);
-            self.layers.clone().get_or_insert(tmp_vec.clone());
+            self.layers = Some(tmp_vec.clone());
         }
         hs
     }
     pub fn backward(mut self,dhs:MatrixThree<f32>) -> MatrixThree<f32>{
         let mut layer:RNN;
-        let mut dh:MatrixTwo<f32>;
         // let mut dxs_2:MatrixTwo<f32>;
         let Wx = &self.params[0];
         let Wh = &self.params[1];
         let b = &self.params[2];
         //全てD:x,N:y,T:zの順にする方が後々よい
         //let (N,T,D) = dhs.clone().shape();
-        let (H,N,T) = dhs.clone().shape();
-        let (D,T) = Wx.clone().shape();
+        let (N,T,H) = dhs.clone().shape();
+        let (H,D) = Wx.clone().shape();
+        //n4t10h3
+        //d3h2
 
         //let mut dxs = MatrixThree::zeros(D, T, N);
         //pythonだとz,y,xの順：np.empty
         //N,T,D => D,T,N
         let mut dxs = MatrixThree::zeros(D, T, N);
-        dh = MatrixTwo::new();
+        //dhをインスタンス化すると、後のsum関数でpanicになる（行と列が0だから）
+        // let mut dh:MatrixTwo<f32> = MatrixTwo::new();
+        let mut dh:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(dhs.len_x(), dhs.len_z());
+
         //macroを使った方がいい：macroは任意の引数を取れるため
-        let mut grads = vec![MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new(),MatrixTwo::<f32>::new()];
-        for t in T..0 {
+        //Vec<Option<MatrixTwo<f32>..>>>でNoneにしないと後のsum関数で面倒なことになる（zerosを使って初期化しないといけないことになる）
+        type Grad = Option<MatrixTwo<f32>>;
+        let mut grads:Vec<Grad> = vec![None,None,None];
+
+        for t in (0..T).rev() {
             if let Some(layer_some) = self.layers.clone(){
                 layer = layer_some[t].clone();
             }else {
                 panic!("Not layer");
             }
-            // let dhs_vec:Vec<Vec<f32>> = dhs.iter().map(|v| &v[t]).cloned().collect();
-            // let dhs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dhs_vec.clone());
-
-            // let dxs_vec:Vec<Vec<f32>> = dxs.iter().map(|v| &v[t]).cloned().collect();
-            // let mut dxs_t:MatrixTwo<f32> = MatrixTwo::create_matrix(dxs_vec.clone());
-            let dhs_2 = MatrixTwo::create_matrix(dhs[t].clone());
-            // dxs_2 = MatrixTwo::create_matrix(dxs[t].clone());
-            // let aaa = dxs[t];
-
-            //dxs[t].spl
-            //
+            //dhsをy:tの２行列へ
+            let dhs_mat_two:MatrixTwo<f32> = mat3_convert_mat2(&dhs, t);
 
             //dxsのt固定の２行列にdxを代入したい...
-            let (dx,dh_tmp) = layer.backward(dhs_2.sum(&dh));
-            dh = dh_tmp;
-            //dxsを最終的に返さないといけない
-            // dxs_2 = dx;
-            &dxs[t].splice(0..,dx.into_iter());
-            // let a = dxs[0][t];
-            // dxs.iter().map(|v| v.splice(0.., dx.vec));
+            //dhに代入したいがタプルは束縛しないとダメなので一旦dh_memoryに代入し、次の行でdhに代入
+            let (dx,dh_memory) = layer.backward(dhs_mat_two.sum(&dh));
+            dh = dh_memory;
+
+            dxs.copy_two_matrix(&dx, t, 1);
             for (i,grad) in layer.grads.iter().enumerate() {
-                grads[i] = grads[i].sum(grad);
+                if let Some(grad_some) = &grads[i]{
+                    grads[i] = Some(grad_some.sum(grad));
+                }else {
+                    grads[i] = Some(grad.clone());
+                }
             }
         }
         for (i,grad) in grads.iter().enumerate() {
-            self.grads[i] = grad.clone();
+            if let Some(grad_some) = grad{
+                self.grads[i] = grad_some.clone();
+            }else {
+                panic!("grad is none");
+            }
+
         }
         self.dh = Some(dh);
         dxs
     }
 }
+
+    //xs[:,t,:]に当たる二次元行列を作成する
+    fn mat3_convert_mat2(mat3:&MatrixThree<f32>,point:usize) -> MatrixTwo<f32>{
+        let mut mat2:MatrixTwo<f32> = MatrixTwo::new();
+        for z in 0..mat3.len_z(){
+            mat2.push(mat3[z][point].clone());
+        }
+        mat2
+    }

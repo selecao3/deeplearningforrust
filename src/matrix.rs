@@ -148,7 +148,7 @@ impl<T> MatrixThree<T> {
         self.vec[0].len()
     }
     pub fn len_x(&self) -> usize {
-        self.vec[1].len()
+        self.vec[0][0].len()
     }
     pub fn shape(self) -> (usize,usize,usize){
         let z = self.vec;
@@ -231,9 +231,6 @@ impl MatrixThree<f32> {
             mat_three.push(vec_two.clone());
             //clearしないと以前のデータを引き継いだままループを再開する
             vec_two.clear();
-        }
-        for z in 0..mat_three.len_z(){
-            println!("mat_three[z]: {:?}",mat_three[z]);
         }
         mat_three
     }
@@ -358,13 +355,16 @@ impl MatrixTwo<f32>{
     //行列の掛け算
     pub fn mat_scalar(&self, mat:MatrixTwo<f32>) -> MatrixTwo<f32>{
         if !self.match_check(&mat){
+            println!("====================");
+            self.print_matrix();
+            println!("====================");
+            mat.print_matrix();
+            println!("====================");
             panic!("行と列が一致していないのでスカラ演算ができない");
         }
         let len_x = self.len_x();
         let len_y = self.len_y();
         let mut ans = MatrixTwo::<f32>::zeros(len_x,len_y);
-        self.print_matrix();
-        mat.print_matrix();
         for y in 0..len_y{
             for x in 0..len_x{
                 ans[y][x] = self[y][x] * mat[y][x];
