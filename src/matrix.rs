@@ -20,6 +20,16 @@ pub struct MatrixThree<T> {
     vec: Vec<Vec<Vec<T>>>,
     dim: usize,
 }
+
+#[derive(Clone,Debug,PartialEq)]
+pub enum MatrixBase<T> {
+    MatrixOne(MatrixOne<T>),
+    MatrixTwo(MatrixTwo<T>),
+    MatrixThree(MatrixThree<T>),
+    None
+}
+
+
 //配列へアクセスするためにIndexトレイトをMatrixOneに実装
 impl<T, I: SliceIndex<[T]>> Index<I> for MatrixOne<T> {
     type Output = I::Output;
@@ -76,6 +86,9 @@ impl<T> MatrixOne<T> {
     pub fn push(&mut self, value: T) -> () {
         self.vec.push(value)
     }
+    pub fn create_matrix(v: Vec<T>) -> MatrixOne<T>{
+        MatrixOne { vec: v, dim: 1 }
+    }
     pub fn len(&self) -> usize {
         self.vec.len()
     }
@@ -91,6 +104,7 @@ impl<T> MatrixOne<T> {
     pub fn dim_get(&self) -> usize {
         self.dim
     }
+
 }
 
 //T type for MatrixTwo
@@ -109,6 +123,11 @@ impl<T> MatrixTwo<T> {
     pub fn dim_get(&self) -> usize {
         self.dim
     }
+    pub fn shape(&self) -> (usize,usize){
+        let y = &self.vec;
+        let x = &y[0];
+        (y.len(),x.len())
+    }
     pub fn push(&mut self, value: Vec<T>) -> () {
         self.vec.push(value)
     }
@@ -121,6 +140,7 @@ impl<T> MatrixTwo<T> {
     pub fn into_iter(self) -> IntoIter<Vec<T>>{
         self.vec.into_iter()
     }
+
 }
 
 impl<T> MatrixThree<T> {
@@ -156,6 +176,8 @@ impl<T> MatrixThree<T> {
         let x = &y[0];
         (z.len(),y.len(),x.len())
     }
+
+
 
 }
 
@@ -199,6 +221,18 @@ impl MatrixTwo<usize> {
         }
         one_hot
     }
+    //転置行列
+    pub fn inverse(&self)->MatrixTwo<usize>{
+        let len_x = self.len_x();
+        let len_y = self.len_y();
+        let mut inv_mat = MatrixTwo::<usize>::zeros(len_y, len_x);
+        for i in 0..len_x {
+            for j in 0..len_y {
+                inv_mat[i][j] = self[j][i];
+            }
+        }
+        inv_mat
+    }
     pub fn print_matrix(&self){
         for target in self.vec.iter() {
             println!("{:?}", target);
@@ -234,11 +268,71 @@ impl MatrixThree<f32> {
         }
         mat_three
     }
+    fn convert_one_matrix(self) -> MatrixOne<f32>{
+        let mut tmp_vec = Vec::new();
+        for z in 0..self.len_z(){
+            for y in 0..self.len_y(){
+                for x in 0..self.len_x(){
+                    tmp_vec.push(self.vec[z][y][x]);
+                }
+            }
+        }
+        MatrixOne::create_matrix(tmp_vec)
+    }
+    pub fn reshape(self, len_z:usize, len_y:usize, len_x:usize) -> MatrixBase<f32>{
+        let source = self.convert_one_matrix();
+        let mut source_len = 0;
+        if len_z == 0 && len_y == 0 {
+            return MatrixBase::MatrixOne(source)
+        }else if len_z == 0 && len_y != 0{
+            let mut target_vec:Vec<Vec<f32>> = Vec::new();
+            for y in 0..len_y{
+                let mut tmp_vec:Vec<f32> = Vec::<f32>::with_capacity(len_x);
+                for x in 0..len_x {
+                    tmp_vec.push(source[source_len]);
+                    if source_len < source.len() {
+                        source_len = source_len + 1;
+                    }else {
+                        panic!("Exceed source's length");
+                    }
+                }
+                target_vec.push(tmp_vec.clone());
+                tmp_vec.clear();
+            }
+            let mat2 = MatrixTwo::create_matrix(target_vec);
+            return MatrixBase::MatrixTwo(mat2)
+        }else{
+            let mut target_vec:Vec<Vec<Vec<f32>>> = Vec::new();
+            for z in 0..len_z{
+                let mut tmp_two_vec:Vec<Vec<f32>> = Vec::<Vec<f32>>::with_capacity(len_y);
+                for y in 0..len_y{
+                    let mut tmp_one_vec:Vec<f32> = Vec::<f32>::with_capacity(len_x);
+                    for x in 0..len_x {
+                        //Vec::new()だとIndexにアクセスできないことに注意＝＞with_capacityを使う
+                        // tmp_vec[z][y][x] = source[source_len];
+                        tmp_one_vec.push(source[source_len]);
+                        if source_len < source.len() {
+                            source_len = source_len + 1;
+                        }else {
+                            panic!("Exceed source's length");
+                        }
+                    }
+                    tmp_two_vec.push(tmp_one_vec.clone());
+                    tmp_one_vec.clear();
+                }
+                target_vec.push(tmp_two_vec.clone());
+                tmp_two_vec.clear();
+            }
+            let mat3 = MatrixThree::create_matrix(target_vec);
+            return MatrixBase::MatrixThree(mat3)
+        }
+    }
 
 
     //usize型の引数によって、特定の２行列に破壊的変更を加える
     //status:0=>selfのx-y行列を変更
     //status:1=>selfのx-z行列を変更
+    //もし、z:N,y:Y,x:Hの三次元行列ならば、y:N,x,Hの二次元行列に変換して計算する
     pub fn copy_two_matrix(&mut self,target:&MatrixTwo<f32>,point:usize,status:usize ){
         if status== 0 {
            self[point] = target.vec.clone();
@@ -255,6 +349,7 @@ impl MatrixThree<f32> {
             println!("{:?}", target);
         }
     }
+
 }
 
 //行列演算：map関数とかでもうちょいスマートにできるんじゃね？
@@ -282,11 +377,6 @@ impl MatrixTwo<f32>{
         }
         MatrixTwo::create_matrix(vec)
     }
-    pub fn shape(self) -> (usize,usize){
-        let z = self.vec;
-        let y = &z[0];
-        (z.len(),y.len())
-    }
     pub fn sum(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
         if !self.match_check(&mat){
             println!("self:");
@@ -303,6 +393,26 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //特定の1行に１行ベクトルを加算する
+    pub fn sum_oneline(&mut self,mat:Vec<f32>,point:usize){
+        if self.len_x() != mat.len(){
+            panic!("列数が一致していないのでsum演算ができない");
+        }
+        for i in 0..self.len_x(){
+            self[point][i] = self[point][i] + mat[i];
+        }
+    }
+    //行列+スカラのメソッド
+    pub fn scalar_plus(&self,target:f32) -> MatrixTwo<f32>{
+
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] + target;
+            }
+        }
+        ans
+    }
     //行列-スカラのメソッド
     pub fn scalar_minus(&self,target:f32) -> MatrixTwo<f32>{
 
@@ -310,6 +420,39 @@ impl MatrixTwo<f32>{
         for i in 0..self.len_y() {
             for j in 0..self.len_x() {
                 ans[i][j] = self[i][j] - target;
+            }
+        }
+        ans
+    }
+    //行列×スカラのメソッド
+    pub fn scalar_multiplication(&self,target:f32) -> MatrixTwo<f32>{
+
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] * target;
+            }
+        }
+        ans
+    }
+    //行列÷スカラのメソッド
+    pub fn scalar_division(&self,target:f32) -> MatrixTwo<f32>{
+
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] / target;
+            }
+        }
+        ans
+    }
+    //スカラ÷行列のメソッド
+    pub fn division_scalar(&self,target:f32) -> MatrixTwo<f32>{
+
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = target / self[i][j];
             }
         }
         ans
@@ -372,6 +515,19 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    //行列版expメソッド
+    pub fn exp(&self) -> MatrixTwo<f32>{
+        let len_x = self.len_x();
+        let len_y = self.len_y();
+        let mut ans = MatrixTwo::<f32>::zeros(len_x,len_y);
+        for y in 0..len_y{
+            for x in 0..len_x{
+                ans[y][x] = libm::F32Ext::exp(self[y][x]);
+                // ans[y][x] = libm::F32Ext::powf(self[y][x], pow_target);
+            }
+        }
+        ans
+    }
     //行列版powメソッド
     pub fn pow(&self, pow_target:f32) -> MatrixTwo<f32>{
         let len_x = self.len_x();
@@ -379,14 +535,14 @@ impl MatrixTwo<f32>{
         let mut ans = MatrixTwo::<f32>::zeros(len_x,len_y);
         for y in 0..len_y{
             for x in 0..len_x{
-                ans[y][x] = libm::pow(self[y][x] as f64 , pow_target as f64) as f32;
+                ans[y][x] = libm::F32Ext::powf(self[y][x], pow_target);
             }
         }
         ans
     }
     //行列の列要素を全て足し上げ
     pub fn matrixAllSum(&self) -> MatrixTwo<f32>{
-        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),1);
         for x in 0..self.len_x() {
             for y in 0..self.len_y() {
                 ans[0][x] += self[y][x];
@@ -424,6 +580,60 @@ impl MatrixTwo<f32>{
     pub fn print_matrix(&self){
         for target in self.vec.iter() {
             println!("{:?}", target);
+        }
+    }
+    fn convert_one_matrix(self) -> MatrixOne<f32>{
+        let mut tmp_vec = Vec::new();
+        for y in 0..self.len_y(){
+            for x in 0..self.len_x(){
+                tmp_vec.push(self.vec[y][x]);
+            }
+        }
+        MatrixOne::create_matrix(tmp_vec)
+    }
+    pub fn reshape(self, len_z:usize, len_y:usize, len_x:usize) -> MatrixBase<f32>{
+        let source = self.convert_one_matrix();
+        let mut source_len = 0;
+        if len_z == 0 && len_y == 0 {
+            return MatrixBase::MatrixOne(source)
+        }else if len_z == 0 && len_y != 0{
+            let mut target_vec:Vec<Vec<f32>> = Vec::new();
+            for y in 0..len_y{
+                let mut tmp_one_vec:Vec<f32> = Vec::<f32>::with_capacity(len_x);
+                for x in 0..len_x {
+                    tmp_one_vec.push(source[source_len]);
+                    if source_len < source.len() {
+                        source_len = source_len + 1;
+                    }else {
+                        panic!("Exceed source's length");
+                    }
+                }
+                target_vec.push(tmp_one_vec);
+            }
+            let mat2 = MatrixTwo::create_matrix(target_vec);
+            return MatrixBase::MatrixTwo(mat2)
+        }else{
+            let mut target_vec:Vec<Vec<Vec<f32>>> = Vec::new();
+            for z in 0..len_z{
+                let mut tmp_two_vec:Vec<Vec<f32>> = Vec::<Vec<f32>>::with_capacity(len_y);
+                for y in 0..len_y{
+                    let mut tmp_one_vec:Vec<f32> = Vec::<f32>::with_capacity(len_x);
+                    for x in 0..len_x {
+                        tmp_one_vec.push(source[source_len]);
+                        if source_len < source.len() {
+                            source_len = source_len + 1;
+                        }else {
+                            panic!("Exceed source's length");
+                        }
+                    }
+                    tmp_two_vec.push(tmp_one_vec.clone());
+                    tmp_one_vec.clear();
+                }
+                target_vec.push(tmp_two_vec.clone());
+                tmp_two_vec.clear();
+            }
+            let mat3 = MatrixThree::create_matrix(target_vec);
+            return MatrixBase::MatrixThree(mat3)
         }
     }
 }

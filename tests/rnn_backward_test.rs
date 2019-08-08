@@ -15,7 +15,7 @@ fn backward_test(){
     let dh_next = MatrixTwo::rand_generate(H,N);
     let x:MatrixTwo<f32> = MatrixTwo::rand_generate(D, N);
     let h_prev:MatrixTwo<f32> = MatrixTwo::rand_generate(H, N);
-    let mut rnn = layers::RNN::init(matrix1,matrix2,matrix3);
+    let mut rnn = time_layers::RNN::init(matrix1,matrix2,matrix3);
     rnn.forward(x, &h_prev);
     let ans = rnn.backward(dh_next);
     println!("ans: {:?}",ans);

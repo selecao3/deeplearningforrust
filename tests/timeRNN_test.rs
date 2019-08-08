@@ -1,7 +1,7 @@
 extern crate win_target_sample;
 use win_target_sample::*;
 use matrix::{MatrixThree, MatrixTwo};
-use layers::*;
+use time_layers::*;
 use rand::Rng;
 
 fn test_init() -> (MatrixTwo<f32>,MatrixTwo<f32>,MatrixTwo<f32>){
@@ -93,4 +93,44 @@ fn timeRNN_backward_test(){
     let ret = timeRNN.backward(dhs);
     println!("=================");
     ret.print_matrix();
+}
+
+#[test]
+fn timeEmbedding_forward_test(){
+    let T:usize = 5;
+    let W = MatrixTwo::rand_generate(T, 4);
+    let mut te = TimeEmbedding::init(W);
+    let vec:Vec<Vec<usize>> = vec![vec![1,2,3];T];
+    let xs = MatrixTwo::create_matrix(vec);
+    let ans = te.forward(xs);
+    ans.print_matrix();
+}
+
+
+#[test]
+fn timeAffine_forward_test() {
+    let N = 4;
+    let T = 5;
+    let D = 6;
+    let W = MatrixTwo::rand_generate(N*T, D);
+    let b = MatrixTwo::rand_generate(N*T,N*T);
+    let mut time_affine = TimeAffine::init(W, b);
+    let x = MatrixThree::rand_generate(D, T, N);
+    let ans = time_affine.forward(x);
+    ans.print_matrix();
+}
+
+#[test]
+fn timeAffine_backward_test() {
+    let N = 4;
+    let T = 5;
+    let D = 6;
+    let W = MatrixTwo::rand_generate(N*T, D);
+    let b = MatrixTwo::rand_generate(N*T,N*T);
+    let mut time_affine = TimeAffine::init(W, b);
+    let x = MatrixThree::rand_generate(D, T, N);
+    time_affine.forward(x);
+    let dout = MatrixThree::rand_generate(D, T, N);
+    let ans = time_affine.backward(dout);
+    ans.print_matrix();
 }

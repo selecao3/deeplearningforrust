@@ -19,7 +19,7 @@ fn rnn_forward_test(){
     let matrix1:MatrixTwo<f32> = MatrixTwo::rand_generate(H,D);
     let matrix2:MatrixTwo<f32> = MatrixTwo::rand_generate(H,H);
     let matrix3:MatrixTwo<f32> = MatrixTwo::rand_generate(H,N);
-    let mut rnn = layers::RNN::init(matrix1,matrix2,matrix3);
+    let mut rnn = time_layers::RNN::init(matrix1,matrix2,matrix3);
     let x:MatrixTwo<f32> = MatrixTwo::rand_generate(D, N);
     let h_prev:MatrixTwo<f32> = MatrixTwo::rand_generate(H, N);
     let forward_ret = rnn.forward(x, &h_prev);
