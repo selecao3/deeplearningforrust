@@ -282,6 +282,9 @@ impl MatrixThree<f32> {
     pub fn reshape(self, len_z:usize, len_y:usize, len_x:usize) -> MatrixBase<f32>{
         let source = self.convert_one_matrix();
         let mut source_len = 0;
+        if len_x == 0 {
+            panic!("You can not use len_x == 0");
+        }
         if len_z == 0 && len_y == 0 {
             return MatrixBase::MatrixOne(source)
         }else if len_z == 0 && len_y != 0{

@@ -109,11 +109,12 @@ fn timeEmbedding_forward_test(){
 
 #[test]
 fn timeAffine_forward_test() {
-    let N = 4;
-    let T = 5;
-    let D = 6;
-    let W = MatrixTwo::rand_generate(N*T, D);
-    let b = MatrixTwo::rand_generate(N*T,N*T);
+    let N = 2;
+    let T = 3;
+    let D = 20;
+    let W = MatrixTwo::rand_generate(D, D);
+    //let b = MatrixTwo::rand_generate(N*T,N*T);
+    let b = MatrixTwo::rand_generate(D,N*T);
     let mut time_affine = TimeAffine::init(W, b);
     let x = MatrixThree::rand_generate(D, T, N);
     let ans = time_affine.forward(x);
@@ -122,11 +123,11 @@ fn timeAffine_forward_test() {
 
 #[test]
 fn timeAffine_backward_test() {
-    let N = 4;
-    let T = 5;
-    let D = 6;
-    let W = MatrixTwo::rand_generate(N*T, D);
-    let b = MatrixTwo::rand_generate(N*T,N*T);
+    let N = 2;
+    let T = 3;
+    let D = 20;
+    let W = MatrixTwo::rand_generate(D, D);
+    let b = MatrixTwo::rand_generate(D,N*T);
     let mut time_affine = TimeAffine::init(W, b);
     let x = MatrixThree::rand_generate(D, T, N);
     time_affine.forward(x);
