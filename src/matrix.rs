@@ -396,6 +396,54 @@ impl MatrixTwo<f32>{
         }
         ans
     }
+    pub fn minus(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
+        if !self.match_check(&mat){
+            println!("self:");
+            self.print_matrix();
+            println!("mat:");
+            mat.print_matrix();
+            panic!("行と列が一致していないのでsum演算ができない");
+        }
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] - mat[i][j];
+            }
+        }
+        ans
+    }
+    pub fn mutmul(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
+        if !self.match_check(&mat){
+            println!("self:");
+            self.print_matrix();
+            println!("mat:");
+            mat.print_matrix();
+            panic!("行と列が一致していないので行列積演算ができない");
+        }
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] * mat[i][j];
+            }
+        }
+        ans
+    }
+    pub fn division(&self,mat:&MatrixTwo<f32>) -> MatrixTwo<f32>{
+        if !self.match_check(&mat){
+            println!("self:");
+            self.print_matrix();
+            println!("mat:");
+            mat.print_matrix();
+            panic!("行と列が一致していないので行列積演算ができない");
+        }
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),self.len_y());
+        for i in 0..self.len_y() {
+            for j in 0..self.len_x() {
+                ans[i][j] = self[i][j] / mat[i][j];
+            }
+        }
+        ans
+    }
     //特定の1行に１行ベクトルを加算する
     pub fn sum_oneline(&mut self,mat:Vec<f32>,point:usize){
         if self.len_x() != mat.len(){
@@ -544,14 +592,54 @@ impl MatrixTwo<f32>{
         ans
     }
     //行列の列要素を全て足し上げ
-    pub fn matrixAllSum(&self) -> MatrixTwo<f32>{
+    pub fn matrixAllSum(&self, axis:usize) -> MatrixTwo<f32>{
         let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),1);
-        for x in 0..self.len_x() {
-            for y in 0..self.len_y() {
-                ans[0][x] += self[y][x];
+        if axis==0 {
+            for x in 0..self.len_x() {
+                for y in 0..self.len_y() {
+                    ans[0][x] += self[y][x];
+                }
             }
+            return ans
+        }else if axis==1 {
+            for y in 0..self.len_y() {
+                for x in 0..self.len_x() {
+                    ans[y][0] += self[y][x];
+                }
+            }
+            return ans
+        }else {
+            panic!("axis couldn't be recognized.");
         }
-        ans
+    }
+    // 二次元からそれぞれ最大値をとった１次元ベクトルを作成
+    pub fn max(&self, axis:usize) -> MatrixTwo<f32>{
+        let mut ans:MatrixTwo<f32> = MatrixTwo::<f32>::zeros(self.len_x(),1);
+        if axis==0 {
+            for x in 0..self.len_x() {
+                let mut max:f32 = 0.0;
+                for y in 0..self.len_y() {
+                    if max < self[y][x] || max == 0.0 {
+                        max = self[y][x];
+                    }
+                }
+                ans[0][x] = max;
+            }
+            return ans
+        }else if axis==1 {
+            for y in 0..self.len_y() {
+                let mut max:f32 = 0.0;
+                    for x in 0..self.len_x() {
+                    if max < self[y][x] || max == 0.0 {
+                        max = self[y][x];
+                    }
+                }
+                ans[y][0] = max;
+            }
+            return ans
+        }else {
+            panic!("axis couldn't be recognized.");
+        }
     }
     
     //行列の各項に対し、tanhの計算
@@ -585,6 +673,14 @@ impl MatrixTwo<f32>{
             println!("{:?}", target);
         }
     }
+    //二次元行列用softmaxメソッド
+    pub fn softmax(&self) -> MatrixTwo<f32>{
+        let mut ans = self.minus(&self.max(1));
+        ans = ans.exp();
+        ans = ans.division(&ans.matrixAllSum(1));
+        ans
+    }
+    //二次元行列を１次元行ベクトルへ変換する
     fn convert_one_matrix(self) -> MatrixOne<f32>{
         let mut tmp_vec = Vec::new();
         for y in 0..self.len_y(){

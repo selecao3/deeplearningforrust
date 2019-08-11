@@ -19,6 +19,13 @@ pub struct Embedding{
     idx:Option<Vec<usize>>
 }
 
+#[derive(Clone,Debug)]
+pub struct Softmax{
+    params: Vec<MatrixTwo<f32>>,
+    grads: Vec<MatrixTwo<f32>>,
+    out:Option<MatrixTwo<f32>>
+}
+
 
 impl Sigmoid {
     pub fn init() -> Sigmoid{
@@ -83,5 +90,32 @@ impl Embedding {
             dW.print_matrix();
         }
 
+    }
+}
+
+impl Softmax {
+    pub fn init() -> Softmax{
+        Softmax{
+            params:Vec::new(),
+            grads:Vec::new(),
+            out:None
+        }
+    }
+    pub fn forward(&mut self,x:MatrixTwo<f32>) -> Option<MatrixTwo<f32>>{
+        self.out = Some(x.softmax());
+        //softmaxの処理を記述したsoftmax関数を書く
+        self.out.clone()
+    }
+    pub fn backward(&self,dout:MatrixTwo<f32>) -> MatrixTwo<f32>{
+        if let Some(out) = &self.out{
+            //mutmulメソッドを実装する（MatrixTwo<f32>）
+            let mut dx = out.mutmul(&dout);
+            //pythonの参考コードではkeepdims=Trueで列のままsumdxに格納している
+            let sumdx = dx.matrixAllSum(1);
+            dx = dx.minus(&out.mutmul(&sumdx));
+            return dx
+        }else {
+            panic!("self.out is none")
+        }
     }
 }

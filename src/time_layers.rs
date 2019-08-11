@@ -66,7 +66,7 @@ impl RNN {
         let (x, h_prev, h_next) = self.cache.clone().unwrap();
 
         let dt = dh_next.mat_scalar(h_next.pow(2f32).scalar_minus(1f32));
-        let db = dt.matrixAllSum();
+        let db = dt.matrixAllSum(0);
         let dWh = h_prev.inverse().dot(&dt);
         let dh_prev = dt.dot(&Wh.inverse());
         let dWx = x.inverse().dot(&dt);
@@ -290,12 +290,12 @@ impl TimeAffine {
             let rx = x.clone().reshape(0, N*T, D);
 
             if let MatrixBase::MatrixTwo(dout_some) = dout{
-                let db = dout_some.matrixAllSum();
+                let db = dout_some.matrixAllSum(0);
                 if let MatrixBase::MatrixTwo(rx_some) = rx{
                     let dW = rx_some.inverse().dot(&dout_some);
                     // let dx = dout_some.dot(&W.inverse());
                     //W.inverseするとdot演算ができない。。。
-                    let dx = dout_some.dot(&W);
+                    let dx = dout_some.dot(&W.inverse());
                     let dx_reshaped = dx.reshape(N,T,D);
                     if let MatrixBase::MatrixThree(dx_some) = dx_reshaped{
                         self.grads[0] = dW;

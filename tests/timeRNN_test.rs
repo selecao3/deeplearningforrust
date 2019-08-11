@@ -128,6 +128,7 @@ fn timeAffine_backward_test() {
     let D = 20;
     let W = MatrixTwo::rand_generate(D, D);
     let b = MatrixTwo::rand_generate(D,N*T);
+    // time_layers.rs:271でoutをN*T,Dの形にするためにW,bを上記の形にする必要がある
     let mut time_affine = TimeAffine::init(W, b);
     let x = MatrixThree::rand_generate(D, T, N);
     time_affine.forward(x);
